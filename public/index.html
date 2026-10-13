@@ -988,7 +988,7 @@
           <td title="${d.atividade}">${truncate(d.atividade, 40)}</td>
           <td>${d.responsavel}</td>
           <td><span class="status-badge status-${d.status.toLowerCase().replace(' ', '-')}">${d.status}</span></td>
-          <td>${d.rdmLink ? `<a href="${d.rdmLink}" target="_blank" class="rdm-link">RDM-${d.demanda}</a>` : '-'}</td>
+          <td>${d.rdmLink ? `<a href="${d.rdmLink}" target="_blank" class="rdm-link">RDM-${d.demandaDisplay || d.demandas?.[0] || d.demanda || '?'}</a>` : '-'}</td>
           <td>
             <div class="action-btns">
               <button class="action-btn edit" title="Editar" onclick="editarDemanda('${d._id}')">✏️</button>
