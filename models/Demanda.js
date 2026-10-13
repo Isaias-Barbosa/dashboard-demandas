@@ -6,9 +6,15 @@ const demandaSchema = new mongoose.Schema({
     required: [true, 'Data de abertura é obrigatória'],
     default: Date.now,
   },
-  demanda: {
-    type: Number,
+  demandas: {
+    type: [Number],
     required: [true, 'Número da demanda é obrigatório'],
+    default: [],
+  },
+  demandaDisplay: {
+    // Para display formatado (ex: "49575 e 530316")
+    type: String,
+    default: '',
   },
   gri: {
     type: String,

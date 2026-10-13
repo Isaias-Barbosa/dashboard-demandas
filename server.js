@@ -46,7 +46,7 @@ app.get('/api/demandas', async (req, res) => {
       filter.$or = [
         { atividade: { $regex: busca, $options: 'i' } },
         { gri: { $regex: busca, $options: 'i' } },
-        { demanda: !isNaN(busca) ? Number(busca) : { $regex: busca, $options: 'i' } },
+        { demandaDisplay: { $regex: busca, $options: 'i' } },
       ];
     }
 
@@ -71,16 +71,22 @@ app.get('/api/demandas/:id', async (req, res) => {
 // CRIAR nova demanda
 app.post('/api/demandas', async (req, res) => {
   try {
-    const { dataAbertura, demanda, gri, atividade, responsavel, rdmLink, status } = req.body;
+    const { dataAbertura, demandaInput, gri, atividade, responsavel, rdmLink, status } = req.body;
 
     // Validações
-    if (!demanda || !gri || !atividade || !responsavel) {
+    if (!demandaInput || !gri || !atividade || !responsavel) {
       return res.status(400).json({ error: 'Campos obrigatórios: demanda, gri, atividade, responsavel' });
     }
 
+    // Processar múltiplas demandas (separadas por "e")
+    const demandaParts = demandaInput.split('e').map(d => d.trim()).filter(d => d);
+    const demandas = demandaParts.map(d => parseInt(d, 10)).filter(n => !isNaN(n));
+    const demandaDisplay = demandaParts.join(' e ');
+
     const novaDemanda = new Demanda({
       dataAbertura: dataAbertura || Date.now(),
-      demanda: Number(demanda),
+      demandas: demandas,
+      demandaDisplay: demandaDisplay,
       gri,
       atividade,
       responsavel,
@@ -98,13 +104,19 @@ app.post('/api/demandas', async (req, res) => {
 // ATUALIZAR demanda
 app.put('/api/demandas/:id', async (req, res) => {
   try {
-    const { dataAbertura, demanda, gri, atividade, responsavel, rdmLink, status } = req.body;
+    const { dataAbertura, demandaInput, gri, atividade, responsavel, rdmLink, status } = req.body;
+
+    // Processar múltiplas demandas
+    const demandaParts = demandaInput ? demandaInput.split('e').map(d => d.trim()).filter(d => d) : [];
+    const demandas = demandaParts.map(d => parseInt(d, 10)).filter(n => !isNaN(n));
+    const demandaDisplay = demandaParts.join(' e ');
 
     const atualizada = await Demanda.findByIdAndUpdate(
       req.params.id,
       {
         dataAbertura,
-        demanda: Number(demanda),
+        demandas: demandas,
+        demandaDisplay: demandaDisplay,
         gri,
         atividade,
         responsavel,

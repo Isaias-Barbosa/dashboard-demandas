@@ -9,7 +9,7 @@ export function exportToExcel(demandas) {
   // Preparar dados para planilha
   const data = demandas.map((d) => ({
     'Data Abertura': d.dataAbertura ? formatDate(d.dataAbertura) : '',
-    'Demanda': d.demanda,
+    'Demanda': d.demandaDisplay || (d.demandas ? d.demandas.join(' e ') : d.demanda),
     'GRI': d.gri,
     'Atividade': d.atividade,
     'Responsável': d.responsavel,
@@ -66,15 +66,24 @@ export function parseExcel(buffer) {
  * para formato aceito pela API
  */
 export function normalizeExcelData(excelRows) {
-  return excelRows.map((row) => ({
-    dataAbertura: parseDate(row['Data Abertura']) || new Date(),
-    demanda: parseInt(row['Demanda'], 10) || 0,
-    gri: String(row['GRI'] || '').trim(),
-    atividade: String(row['Atividade'] || '').trim(),
-    responsavel: String(row[' Responsável'] || row['Responsável'] || '').trim(),
-    rdmLink: String(row['RDM Link'] || '').trim(),
-    status: row['Status'] || 'Aberta',
-  }));
+  return excelRows.map((row) => {
+    // Aceita múltiplas demandas separadas por "e" ou ","
+    const demandaRaw = String(row['Demanda'] || '').trim();
+    const demandaParts = demandaRaw.split(/[e,]/).map(d => d.trim()).filter(d => d);
+    const demandas = demandaParts.map(d => parseInt(d, 10)).filter(n => !isNaN(n));
+    const demandaDisplay = demandaParts.join(' e ');
+
+    return {
+      dataAbertura: parseDate(row['Data Abertura']) || new Date(),
+      demandas: demandas,
+      demandaDisplay: demandaDisplay,
+      gri: String(row['GRI'] || '').trim(),
+      atividade: String(row['Atividade'] || '').trim(),
+      responsavel: String(row[' Responsável'] || row['Responsável'] || '').trim(),
+      rdmLink: String(row['RDM Link'] || '').trim(),
+      status: row['Status'] || 'Aberta',
+    };
+  });
 }
 
 // Helpers

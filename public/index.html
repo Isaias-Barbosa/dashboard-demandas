@@ -705,8 +705,8 @@
             </div>
             
             <div class="form-group">
-              <label>Número da Demanda *</label>
-              <input type="number" id="demanda-numero" required>
+              <label>Demanda(s) * (ex: 49575 e 530316)</label>
+              <input type="text" id="demanda-numero" placeholder="49575 e 530316" required>
             </div>
             
             <div class="form-group">
@@ -813,7 +813,7 @@
     async function salvarDemanda() {
       const dados = {
         dataAbertura: document.getElementById('demanda-data').value,
-        demanda: document.getElementById('demanda-numero').value,
+        demandaInput: document.getElementById('demanda-numero').value,
         gri: document.getElementById('demanda-gri').value,
         atividade: document.getElementById('demanda-atividade').value,
         responsavel: document.getElementById('demanda-responsavel').value,
@@ -959,10 +959,11 @@
         if (responsavelFiltro !== 'Todos' && d.responsavel !== responsavelFiltro) return false;
         if (statusFiltro !== 'Todos' && d.status !== statusFiltro) return false;
         if (busca) {
-          const match = 
-            String(d.demanda).includes(busca) ||
-            (d.gri || '').toLowerCase().includes(busca) ||
-            (d.atividade || '').toLowerCase().includes(busca);
+              const match = 
+                (d.demandaDisplay || '').includes(busca) ||
+                (d.demandas || []).some(x => String(x).includes(busca)) ||
+                (d.gri || '').toLowerCase().includes(busca) ||
+                (d.atividade || '').toLowerCase().includes(busca);
           if (!match) return false;
         }
         return true;
@@ -982,7 +983,7 @@
       tbody.innerHTML = filtradas.map(d => `
         <tr>
           <td>${formatDate(d.dataAbertura)}</td>
-          <td><strong>#${d.demanda}</strong></td>
+          <td><strong>${d.demandaDisplay || d.demandas?.join(' e ') || d.demanda || '-'}</strong></td>
           <td>${d.gri}</td>
           <td title="${d.atividade}">${truncate(d.atividade, 40)}</td>
           <td>${d.responsavel}</td>
@@ -1108,7 +1109,7 @@
       editandoId = id;
       document.getElementById('modal-titulo').textContent = '✏️ Editar Demanda';
       document.getElementById('demanda-data').value = demanda.dataAbertura ? demanda.dataAbertura.split('T')[0] : '';
-      document.getElementById('demanda-numero').value = demanda.demanda;
+      document.getElementById('demanda-numero').value = demanda.demandaDisplay || (demanda.demandas ? demanda.demandas.join(' e ') : demanda.demanda);
       document.getElementById('demanda-gri').value = demanda.gri;
       document.getElementById('demanda-atividade').value = demanda.atividade;
       document.getElementById('demanda-responsavel').value = demanda.responsavel;

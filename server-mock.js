@@ -21,7 +21,8 @@ let demandas = [
   {
     _id: '1',
     dataAbertura: '2026-10-13',
-    demanda: 49542,
+    demandas: [49542],
+    demandaDisplay: '49542',
     gri: 'S-2503651088',
     atividade: 'Lentidão produto relatório títulos descontados, processo relatório inventário contábil',
     responsavel: 'Carlos',
@@ -33,7 +34,8 @@ let demandas = [
   {
     _id: '2',
     dataAbertura: '2026-10-12',
-    demanda: 49541,
+    demandas: [49541],
+    demandaDisplay: '49541',
     gri: 'S-2503651087',
     atividade: 'Ajuste na tela de consulta de clientes',
     responsavel: 'Maria',
@@ -45,9 +47,10 @@ let demandas = [
   {
     _id: '3',
     dataAbertura: '2026-10-11',
-    demanda: 49540,
+    demandas: [49575, 530316],
+    demandaDisplay: '49575 e 530316',
     gri: 'S-2503651086',
-    atividade: 'Bug no cálculo de juros',
+    atividade: 'Bug no cálculo de juros - multi demandas',
     responsavel: 'João',
     rdmLink: 'https://sisbr.atlassian.net/browse/RDM-49540',
     status: 'Concluída',
