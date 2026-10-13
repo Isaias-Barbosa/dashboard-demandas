@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard de Demandas - Sicoob</title>
+  
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  
+  <!-- Chart.js -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+  
+  <!-- XLSX for Excel import -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  
+  <style>
+    :root {
+      --primary: #00753A;
+      --primary-dark: #005228;
+      --secondary: #00A856;
+      --danger: #DC3545;
+      --warning: #FFC107;
+      --success: #28A745;
+      --info: #17A2B8;
+      --dark: #343A40;
+      --light: #F8F9FA;
+      --gray: #6C757D;
+      --border: #DEE2E6;
+      --shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: #F5F7FA;
+      color: #212529;
+      min-height: 100vh;
+    }
+
+    /* Header */
+    .header {
+      background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+      color: white;
+      padding: 1.5rem 2rem;
+      box-shadow: var(--shadow);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+
+    .header-content {
+      max-width: 1400px;
+      margin: 0 auto;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 1rem;
+    }
+
+    .header h1 {
+      font-size: 1.5rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .header-actions {
+      display: flex;
+      gap: 0.75rem;
+    }
+
+    /* Buttons */
+    .btn {
+      padding: 0.625rem 1.25rem;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .btn-primary {
+      background: var(--secondary);
+      color: white;
+    }
+
+    .btn-primary:hover {
+      background: var(--primary);
+      transform: translateY(-1px);
+    }
+
+    .btn-outline {
+      background: transparent;
+      border: 1.5px solid rgba(255,255,255,0.6);
+      color: white;
+    }
+
+    .btn-outline:hover {
+      background: rgba(255,255,255,0.1);
+      border-color: white;
+    }
+
+    .btn-sm {
+      padding: 0.375rem 0.75rem;
+      font-size: 0.8125rem;
+    }
+
+    .btn-danger { background: var(--danger); color: white; }
+    .btn-warning { background: var(--warning); color: #212529; }
+
+    /* Main Content */
+    .main {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 1.5rem 2rem;
+    }
+
+    /* Stats Cards */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 1rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+      background: white;
+      border-radius: 10px;
+      padding: 1.25rem;
+      box-shadow: var(--shadow);
+      transition: transform 0.2s ease;
+    }
+
+    .stat-card:hover {
+      transform: translateY(-2px);
+    }
+
+    .stat-card.total { border-left: 4px solid var(--primary); }
+    .stat-card.abertas { border-left: 4px solid var(--warning); }
+    .stat-card.andamento { border-left: 4px solid var(--info); }
+    .stat-card.concluidas { border-left: 4px solid var(--success); }
+    .stat-card.canceladas { border-left: 4px solid var(--gray); }
+
+    .stat-card .label {
+      font-size: 0.8125rem;
+      color: var(--gray);
+      margin-bottom: 0.375rem;
+    }
+
+    .stat-card .value {
+      font-size: 2rem;
+      font-weight: 700;
+      color: var(--dark);
+    }
+
+    /* Charts Section */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
+      gap: 1.5rem;
+      margin-bottom: 1.5rem;
+    }
+
+    .chart-card {
+      background: white;
+      border-radius: 10px;
+      padding: 1.25rem;
+      box-shadow: var(--shadow);
+    }
+
+    .chart-card h3 {
+      font-size: 1rem;
+      color: var(--dark);
+      margin-bottom: 1rem;
+      font-weight: 600;
+    }
+
+    .chart-container {
+      height: 250px;
+      position: relative;
+    }
+
+    /* Filters */
+    .filters-bar {
+      background: white;
+      border-radius: 10px;
+      padding: 1rem 1.25rem;
+      box-shadow: var(--shadow);
+      margin-bottom: 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 1rem;
+      align-items: center;
+    }
+
+    .search-input {
+      flex: 1;
+      min-width: 200px;
+      padding: 0.625rem 1rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.875rem;
+    }
+
+    .search-input:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(0,117,58,0.1);
+    }
+
+    .filter-group {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+    }
+
+    .filter-group label {
+      font-size: 0.8125rem;
+      color: var(--gray);
+      font-weight: 500;
+    }
+
+    .filter-select {
+      padding: 0.5rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.875rem;
+      background: white;
+      cursor: pointer;
+    }
+
+    .filter-select:focus {
+      outline: none;
+      border-color: var(--primary);
+    }
+
+    /* Table */
+    .table-card {
+      background: white;
+      border-radius: 10px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+
+    .table-header {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .table-header h3 {
+      font-size: 1rem;
+      font-weight: 600;
+    }
+
+    .table-container {
+      overflow-x: auto;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    th, td {
+      padding: 0.875rem 1rem;
+      text-align: left;
+      border-bottom: 1px solid var(--border);
+    }
+
+    th {
+      background: var(--light);
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: var(--gray);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    td {
+      font-size: 0.875rem;
+    }
+
+    tr:hover {
+      background: #FAFBFC;
+    }
+
+    .status-badge {
+      display: inline-block;
+      padding: 0.25rem 0.625rem;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: 500;
+    }
+
+    .status-aberta { background: #FFF3CD; color: #856404; }
+    .status-em-andamento { background: #D1ECF1; color: #0C5460; }
+    .status-concluida { background: #D4EDDA; color: #155724; }
+    .status-cancelada { background: #F8D7DA; color: #721C24; }
+
+    .rdm-link {
+      color: var(--primary);
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .rdm-link:hover {
+      text-decoration: underline;
+    }
+
+    .action-btns {
+      display: flex;
+      gap: 0.375rem;
+    }
+
+    .action-btn {
+      width: 32px;
+      height: 32px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      transition: all 0.2s;
+      font-size: 1rem;
+    }
+
+    .action-btn.edit { background: rgba(23,162,184,0.1); color: var(--info); }
+    .action-btn.edit:hover { background: var(--info); color: white; }
+    .action-btn.delete { background: rgba(220,53,69,0.1); color: var(--danger); }
+    .action-btn.delete:hover { background: var(--danger); color: white; }
+
+    /* Modal */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0,0,0,0.5);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      visibility: hidden;
+      transition: all 0.3s ease;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      visibility: visible;
+    }
+
+    .modal {
+      background: white;
+      border-radius: 12px;
+      width: 90%;
+      max-width: 550px;
+      max-height: 90vh;
+      overflow-y: auto;
+      transform: translateY(-20px);
+      transition: transform 0.3s ease;
+    }
+
+    .modal-overlay.active .modal {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      padding: 1.25rem 1.5rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .modal-header h2 {
+      font-size: 1.125rem;
+      font-weight: 600;
+    }
+
+    .modal-close {
+      background: none;
+      border: none;
+      font-size: 1.5rem;
+      cursor: pointer;
+      color: var(--gray);
+      line-height: 1;
+    }
+
+    .modal-close:hover { color: var(--dark); }
+
+    .modal-body {
+      padding: 1.5rem;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 1rem;
+    }
+
+    .form-group {
+      margin-bottom: 1rem;
+    }
+
+    .form-group.full-width {
+      grid-column: 1 / -1;
+    }
+
+    .form-group label {
+      display: block;
+      font-size: 0.8125rem;
+      font-weight: 500;
+      color: var(--dark);
+      margin-bottom: 0.375rem;
+    }
+
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 0.625rem 0.875rem;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-size: 0.875rem;
+      font-family: inherit;
+      transition: border-color 0.2s;
+    }
+
+    .form-group input:focus,
+    .form-group select:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(0,117,58,0.1);
+    }
+
+    .form-group textarea {
+      min-height: 80px;
+      resize: vertical;
+    }
+
+    .modal-footer {
+      padding: 1rem 1.5rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.75rem;
+    }
+
+    /* Toast Notifications */
+    .toast-container {
+      position: fixed;
+      bottom: 1.5rem;
+      right: 1.5rem;
+      z-index: 1100;
+      display: flex;
+      flex-direction: column;
+      gap: 0.5rem;
+    }
+
+    .toast {
+      background: var(--dark);
+      color: white;
+      padding: 0.875rem 1.25rem;
+      border-radius: 8px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      display: flex;
+      align-items: center;
+      gap: 0.75rem;
+      animation: slideIn 0.3s ease;
+    }
+
+    .toast.success { background: var(--success); }
+    .toast.error { background: var(--danger); }
+    .toast.warning { background: var(--warning); color: var(--dark); }
+
+    @keyframes slideIn {
+      from { transform: translateX(100%); opacity: 0; }
+      to { transform: translateX(0); opacity: 1; }
+    }
+
+    /* Loading */
+    .loading-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(255,255,255,0.8);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1200;
+    }
+
+    .spinner {
+      width: 40px;
+      height: 40px;
+      border: 3px solid var(--border);
+      border-top-color: var(--primary);
+      border-radius: 50%;
+      animation: spin 0.8s linear infinite;
+    }
+
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+
+    .hidden { display: none !important; }
+
+    /* Responsividade */
+    @media (max-width: 768px) {
+      .header-content { flex-direction: column; text-align: center; }
+      .charts-grid { grid-template-columns: 1fr; }
+      .form-grid { grid-template-columns: 1fr; }
+      .filters-bar { flex-direction: column; }
+      .filter-group { width: 100%; }
+      .filter-select { flex: 1; }
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+    }
+
+    /* File upload styling */
+    .file-upload {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      padding: 2rem;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .file-upload:hover {
+      border-color: var(--primary);
+      background: rgba(0,117,58,0.02);
+    }
+
+    .file-upload input {
+      display: none;
+    }
+
+    .file-upload-icon {
+      font-size: 2rem;
+      margin-bottom: 0.5rem;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header -->
+  <header class="header">
+    <div class="header-content">
+      <h1>📊 Dashboard de Demandas</h1>
+      <div class="header-actions">
+        <button class="btn btn-outline" onclick="exportarExcel()">
+          📥 Exportar Excel
+        </button>
+        <button class="btn btn-primary" onclick="abrirModal()">
+          ➕ Nova Demanda
+        </button>
+      </div>
+    </div>
+  </header>
+
+  <main class="main">
+    <!-- Stats Cards -->
+    <div class="stats-grid">
+      <div class="stat-card total">
+        <div class="label">Total de Demandas</div>
+        <div class="value" id="stat-total">0</div>
+      </div>
+      <div class="stat-card abertas">
+        <div class="label">Abertas</div>
+        <div class="value" id="stat-abertas">0</div>
+      </div>
+      <div class="stat-card andamento">
+        <div class="label">Em Andamento</div>
+        <div class="value" id="stat-andamento">0</div>
+      </div>
+      <div class="stat-card concluidas">
+        <div class="label">Concluídas</div>
+        <div class="value" id="stat-concluidas">0</div>
+      </div>
+      <div class="stat-card canceladas">
+        <div class="label">Canceladas</div>
+        <div class="value" id="stat-canceladas">0</div>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-grid">
+      <div class="chart-card">
+        <h3>Demandas por Status</h3>
+        <div class="chart-container">
+          <canvas id="chart-status"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <h3>Demandas por Responsável</h3>
+        <div class="chart-container">
+          <canvas id="chart-responsavel"></canvas>
+        </div>
+      </div>
+      <div class="chart-card">
+        <h3>Evolução por Mês</h3>
+        <div class="chart-container">
+          <canvas id="chart-mes"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="filters-bar">
+      <input type="text" class="search-input" id="busca" placeholder="🔍Buscar por demanda, GRI ou atividade..." oninput="filtrarDados()">
+      
+      <div class="filter-group">
+        <label>Responsável:</label>
+        <select class="filter-select" id="filtro-responsavel" onchange="filtrarDados()">
+          <option value="Todos">Todos</option>
+        </select>
+      </div>
+      
+      <div class="filter-group">
+        <label>Status:</label>
+        <select class="filter-select" id="filtro-status" onchange="filtrarDados()">
+          <option value="Todos">Todos</option>
+          <option value="Aberta">Aberta</option>
+          <option value="Em Andamento">Em Andamento</option>
+          <option value="Concluída">Concluída</option>
+          <option value="Cancelada">Cancelada</option>
+        </select>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-card">
+      <div class="table-header">
+        <h3>Lista de Demandas</h3>
+        <div>
+          <label class="file-upload" style="display: inline-block; padding: 0.5rem 1rem; font-size: 0.875rem;">
+            📤 Importar Excel
+            <input type="file" accept=".xlsx,.xls" onchange="importarExcel(event)">
+          </label>
+        </div>
+      </div>
+      <div class="table-container">
+        <table>
+          <thead>
+            <tr>
+              <th>Data</th>
+              <th>Demanda</th>
+              <th>GRI</th>
+              <th>Atividade</th>
+              <th>Responsável</th>
+              <th>Status</th>
+              <th>RDM Link</th>
+              <th>Ações</th>
+            </tr>
+          </thead>
+          <tbody id="tabela-demandas">
+            <tr>
+              <td colspan="8" style="text-align: center; padding: 2rem; color: var(--gray);">
+                Carregando dados...
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </main>
+
+  <!-- Modal Nova/Editar Demanda -->
+  <div class="modal-overlay" id="modal-demanda">
+    <div class="modal">
+      <div class="modal-header">
+        <h2 id="modal-titulo">➕ Nova Demanda</h2>
+        <button class="modal-close" onclick="fecharModal()">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-demanda">
+          <input type="hidden" id="demanda-id">
+          
+          <div class="form-grid">
+            <div class="form-group">
+              <label>Data de Abertura *</label>
+              <input type="date" id="demanda-data" required>
+            </div>
+            
+            <div class="form-group">
+              <label>Número da Demanda *</label>
+              <input type="number" id="demanda-numero" required>
+            </div>
+            
+            <div class="form-group">
+              <label>GRI *</label>
+              <input type="text" id="demanda-gri" required>
+            </div>
+            
+            <div class="form-group">
+              <label>Responsável *</label>
+              <input type="text" id="demanda-responsavel" required>
+            </div>
+            
+            <div class="form-group">
+              <label>Status</label>
+              <select id="demanda-status">
+                <option value="Aberta">Aberta</option>
+                <option value="Em Andamento">Em Andamento</option>
+                <option value="Concluída">Concluída</option>
+                <option value="Cancelada">Cancelada</option>
+              </select>
+            </div>
+            
+            <div class="form-group full-width">
+              <label>RDM Link</label>
+              <input type="url" id="demanda-rdm" placeholder="https://sisbr.atlassian.net/browse/RDM-XXXXX">
+            </div>
+            
+            <div class="form-group full-width">
+              <label>Atividade *</label>
+              <textarea id="demanda-atividade" required placeholder="Descreva a atividade..."></textarea>
+            </div>
+          </div>
+        </form>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-outline" style="border-color: var(--border); color: var(--dark);" onclick="fecharModal()">Cancelar</button>
+        <button class="btn btn-primary" onclick="salvarDemanda()">💾 Salvar</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Toast Container -->
+  <div class="toast-container" id="toast-container"></div>
+
+  <!-- Loading Overlay -->
+  <div class="loading-overlay hidden" id="loading">
+    <div class="spinner"></div>
+  </div>
+
+  <script>
+    // =================== CONFIGURAÇÃO ===================
+    const API_URL = window.location.hostname === 'localhost' 
+      ? 'http://localhost:3000/api' 
+      : '/api';
+
+    // =================== ESTADO ===================
+    let demandas = [];
+    let editandoId = null;
+    let chartStatus = null;
+    let chartResponsavel = null;
+    let chartMes = null;
+
+    // =================== INICIALIZAÇÃO ===================
+    document.addEventListener('DOMContentLoaded', () => {
+      carregarDados();
+    });
+
+    // =================== API ===================
+    async function carregarDados() {
+      try {
+        const response = await fetch(`${API_URL}/demandas`);
+        if (!response.ok) throw new Error('Erro ao carregar demandas');
+        demandas = await response.json();
+        
+        carregarEstatisticas();
+        renderizarTabela();
+        atualizarFiltros();
+      } catch (err) {
+        console.error(err);
+        showToast('Erro ao carregar dados: ' + err.message, 'error');
+      }
+    }
+
+    async function carregarEstatisticas() {
+      try {
+        const response = await fetch(`${API_URL}/stats`);
+        if (!response.ok) throw new Error('Erro ao carregar estatísticas');
+        const stats = await response.json();
+
+        // Atualizar cards
+        document.getElementById('stat-total').textContent = stats.total;
+        document.getElementById('stat-abertas').textContent = stats.abertas;
+        document.getElementById('stat-andamento').textContent = stats.emAndamento;
+        document.getElementById('stat-concluidas').textContent = stats.concluidas;
+        document.getElementById('stat-canceladas').textContent = stats.canceladas;
+
+        // Atualizar gráficos
+        renderizarCharts(stats);
+      } catch (err) {
+        console.error(err);
+      }
+    }
+
+    async function salvarDemanda() {
+      const dados = {
+        dataAbertura: document.getElementById('demanda-data').value,
+        demanda: document.getElementById('demanda-numero').value,
+        gri: document.getElementById('demanda-gri').value,
+        atividade: document.getElementById('demanda-atividade').value,
+        responsavel: document.getElementById('demanda-responsavel').value,
+        rdmLink: document.getElementById('demanda-rdm').value,
+        status: document.getElementById('demanda-status').value,
+      };
+
+      // Validação
+      if (!dados.demanda || !dados.gri || !dados.atividade || !dados.responsavel) {
+        showToast('Preencha todos os campos obrigatórios!', 'warning');
+        return;
+      }
+
+      try {
+        showLoading(true);
+        let response;
+
+        if (editandoId) {
+          response = await fetch(`${API_URL}/demandas/${editandoId}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dados),
+          });
+        } else {
+          response = await fetch(`${API_URL}/demandas`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(dados),
+          });
+        }
+
+        if (!response.ok) {
+          const err = await response.json();
+          throw new Error(err.error || 'Erro ao salvar');
+        }
+
+        showToast(editandoId ? 'Demanda atualizada!' : 'Demanda criada!', 'success');
+        fecharModal();
+        carregarDados();
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    async function deletarDemanda(id) {
+      if (!confirm('Tem certeza que deseja excluir esta demanda?')) return;
+
+      try {
+        showLoading(true);
+        const response = await fetch(`${API_URL}/demandas/${id}`, {
+          method: 'DELETE',
+        });
+
+        if (!response.ok) throw new Error('Erro ao excluir');
+
+        showToast('Demanda excluída!', 'success');
+        carregarDados();
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    async function exportarExcel() {
+      try {
+        showLoading(true);
+        const response = await fetch(`${API_URL}/export/excel`);
+        if (!response.ok) throw new Error('Erro ao exportar');
+
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = 'Controle_de_Demandas.xlsx';
+        a.click();
+        window.URL.revokeObjectURL(url);
+
+        showToast('Excel exportado com sucesso!', 'success');
+      } catch (err) {
+        showToast(err.message, 'error');
+      } finally {
+        showLoading(false);
+      }
+    }
+
+    async function importarExcel(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+
+      try {
+        showLoading(true);
+
+        const data = await file.arrayBuffer();
+        const workbook = XLSX.read(data);
+        const sheet = workbook.Sheets[workbook.SheetNames[0]];
+        const json = XLSX.utils.sheet_to_json(sheet);
+
+        // Normalizar nomes das colunas
+        const dados = json.map(row => ({
+          dataAbertura: row['Data Abertura'] || new Date().toISOString(),
+          demanda: parseInt(row['Demanda']) || 0,
+          gri: row['GRI'] || '',
+          atividade: row['Atividade'] || '',
+          responsavel: row['Responsável'] || row[' Responsável'] || '',
+          rdmLink: row['RDM Link'] || '',
+          status: row['Status'] || 'Aberta',
+        })).filter(d => d.demanda);
+
+        const response = await fetch(`${API_URL}/import/excel`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ data: dados }),
+        });
+
+        const result = await response.json();
+        
+        showToast(`${result.importados} demandas importadas!`, 'success');
+        if (result.erros.length) {
+          console.warn('Erros:', result.erros);
+        }
+        
+        carregarDados();
+      } catch (err) {
+        showToast('Erro ao importar: ' + err.message, 'error');
+      } finally {
+        showLoading(false);
+        event.target.value = '';
+      }
+    }
+
+    // =================== RENDERIZAÇÃO ===================
+    function renderizarTabela() {
+      const tbody = document.getElementById('tabela-demandas');
+      
+      const responsavelFiltro = document.getElementById('filtro-responsavel').value;
+      const statusFiltro = document.getElementById('filtro-status').value;
+      const busca = document.getElementById('busca').value.toLowerCase();
+
+      let filtradas = demandas.filter(d => {
+        if (responsavelFiltro !== 'Todos' && d.responsavel !== responsavelFiltro) return false;
+        if (statusFiltro !== 'Todos' && d.status !== statusFiltro) return false;
+        if (busca) {
+          const match = 
+            String(d.demanda).includes(busca) ||
+            (d.gri || '').toLowerCase().includes(busca) ||
+            (d.atividade || '').toLowerCase().includes(busca);
+          if (!match) return false;
+        }
+        return true;
+      });
+
+      if (filtradas.length === 0) {
+        tbody.innerHTML = `
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 2rem; color: var(--gray);">
+              Nenhuma demanda encontrada
+            </td>
+          </tr>
+        `;
+        return;
+      }
+
+      tbody.innerHTML = filtradas.map(d => `
+        <tr>
+          <td>${formatDate(d.dataAbertura)}</td>
+          <td><strong>#${d.demanda}</strong></td>
+          <td>${d.gri}</td>
+          <td title="${d.atividade}">${truncate(d.atividade, 40)}</td>
+          <td>${d.responsavel}</td>
+          <td><span class="status-badge status-${d.status.toLowerCase().replace(' ', '-')}">${d.status}</span></td>
+          <td>${d.rdmLink ? `<a href="${d.rdmLink}" target="_blank" class="rdm-link">RDM-${d.demanda}</a>` : '-'}</td>
+          <td>
+            <div class="action-btns">
+              <button class="action-btn edit" title="Editar" onclick="editarDemanda('${d._id}')">✏️</button>
+              <button class="action-btn delete" title="Excluir" onclick="deletarDemanda('${d._id}')">🗑️</button>
+            </div>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function renderizarCharts(stats) {
+      // Chart por Status
+      const ctxStatus = document.getElementById('chart-status').getContext('2d');
+      if (chartStatus) chartStatus.destroy();
+      
+      const statusData = {
+        'Aberta': stats.abertas,
+        'Em Andamento': stats.emAndamento,
+        'Concluída': stats.concluidas,
+        'Cancelada': stats.canceladas,
+      };
+
+      chartStatus = new Chart(ctxStatus, {
+        type: 'doughnut',
+        data: {
+          labels: Object.keys(statusData),
+          datasets: [{
+            data: Object.values(statusData),
+            backgroundColor: ['#FFC107', '#17A2B8', '#28A745', '#6C757D'],
+            borderWidth: 0,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { position: 'bottom' }
+          }
+        }
+      });
+
+      // Chart por Responsável
+      const ctxResp = document.getElementById('chart-responsavel').getContext('2d');
+      if (chartResponsavel) chartResponsavel.destroy();
+      
+      chartResponsavel = new Chart(ctxResp, {
+        type: 'bar',
+        data: {
+          labels: stats.porResponsavel.map(r => r._id || 'Sem responsável'),
+          datasets: [{
+            label: 'Quantidade',
+            data: stats.porResponsavel.map(r => r.count),
+            backgroundColor: '#00753A',
+            borderRadius: 4,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, ticks: { stepSize: 1 } }
+          }
+        }
+      });
+
+      // Chart por Mês
+      const ctxMes = document.getElementById('chart-mes').getContext('2d');
+      if (chartMes) chartMes.destroy();
+      
+      chartMes = new Chart(ctxMes, {
+        type: 'line',
+        data: {
+          labels: stats.porMes.map(m => m._id),
+          datasets: [{
+            label: 'Demandas',
+            data: stats.porMes.map(m => m.count),
+            borderColor: '#00753A',
+            backgroundColor: 'rgba(0, 117, 58, 0.1)',
+            fill: true,
+            tension: 0.3,
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: { legend: { display: false } },
+          scales: {
+            y: { beginAtZero: true, ticks: { stepSize: 1 } }
+          }
+        }
+      });
+    }
+
+    function atualizarFiltros() {
+      const responsaveis = [...new Set(demandas.map(d => d.responsavel))].filter(Boolean).sort();
+      const select = document.getElementById('filtro-responsavel');
+      const currentValue = select.value;
+      
+      select.innerHTML = '<option value="Todos">Todos</option>' + 
+        responsaveis.map(r => `<option value="${r}" ${r === currentValue ? 'selected' : ''}>${r}</option>`).join('');
+    }
+
+    // =================== MODAL ===================
+    function abrirModal() {
+      editandoId = null;
+      document.getElementById('modal-titulo').textContent = '➕ Nova Demanda';
+      document.getElementById('form-demanda').reset();
+      document.getElementById('demanda-data').value = new Date().toISOString().split('T')[0];
+      document.getElementById('demanda-status').value = 'Aberta';
+      document.getElementById('modal-demanda').classList.add('active');
+    }
+
+    function editarDemanda(id) {
+      const demanda = demandas.find(d => d._id === id);
+      if (!demanda) return;
+
+      editandoId = id;
+      document.getElementById('modal-titulo').textContent = '✏️ Editar Demanda';
+      document.getElementById('demanda-data').value = demanda.dataAbertura ? demanda.dataAbertura.split('T')[0] : '';
+      document.getElementById('demanda-numero').value = demanda.demanda;
+      document.getElementById('demanda-gri').value = demanda.gri;
+      document.getElementById('demanda-atividade').value = demanda.atividade;
+      document.getElementById('demanda-responsavel').value = demanda.responsavel;
+      document.getElementById('demanda-rdm').value = demanda.rdmLink || '';
+      document.getElementById('demanda-status').value = demanda.status || 'Aberta';
+
+      document.getElementById('modal-demanda').classList.add('active');
+    }
+
+    function fecharModal() {
+      document.getElementById('modal-demanda').classList.remove('active');
+      editandoId = null;
+    }
+
+    function filtrarDados() {
+      renderizarTabela();
+    }
+
+    // =================== HELPERS ===================
+    function formatDate(dateStr) {
+      if (!dateStr) return '-';
+      const date = new Date(dateStr);
+      return date.toLocaleDateString('pt-BR');
+    }
+
+    function truncate(str, len) {
+      if (!str) return '';
+      return str.length > len ? str.substring(0, len) + '...' : str;
+    }
+
+    function showToast(message, type = 'info') {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = `toast ${type}`;
+      toast.textContent = message;
+      container.appendChild(toast);
+      
+      setTimeout(() => {
+        toast.remove();
+      }, 4000);
+    }
+
+    function showLoading(show) {
+      document.getElementById('loading').classList.toggle('hidden', !show);
+    }
+
+    // Fechar modal ao clicar fora
+    document.getElementById('modal-demanda').addEventListener('click', (e) => {
+      if (e.target.classList.contains('modal-overlay')) {
+        fecharModal();
+      }
+    });
+  </script>
+</body>
+</html>

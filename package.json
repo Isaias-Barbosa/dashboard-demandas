@@ -1,0 +1,23 @@
+{
+  "name": "dashboard-demandas",
+  "version": "1.0.0",
+  "description": "Dashboard interativo para controle de demandas - Sicoob",
+  "main": "server.js",
+  "type": "module",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js",
+    "mock": "node server-mock.js"
+  },
+  "dependencies": {
+    "express": "^4.21.0",
+    "mongoose": "^8.8.0",
+    "cors": "^2.8.5",
+    "dotenv": "^16.4.5",
+    "xlsx": "^0.18.5",
+    "multer": "^1.4.5-lts.1"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}
