@@ -15,6 +15,9 @@ const __dirname = path.dirname(__filename);
 const app = express();
 const PORT = process.env.PORT || 3000;
 
+// Ajuste para Render.com - usar variável correta
+const MONGODB_URI = process.env.MONGODB_URI || process.env.MONGO_URI || '';
+
 // Middleware
 app.use(cors({ origin: process.env.CORS_ORIGIN || '*' }));
 app.use(express.json({ limit: '10mb' }));
@@ -258,7 +261,7 @@ app.get('*', (req, res) => {
 // CONEXÃO MONGODB + START
 // ============================================================================
 mongoose
-  .connect(process.env.MONGODB_URI)
+  .connect(MONGODB_URI)
   .then(() => {
     console.log('✅ Conectado ao MongoDB Atlas');
     app.listen(PORT, () => {
